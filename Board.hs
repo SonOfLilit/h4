@@ -8,7 +8,7 @@ module Board
     , boardHeight
     , move
     ) where
-import Data.List
+import Data.List(transpose)
 
 data Player = Player1
             | Player2
