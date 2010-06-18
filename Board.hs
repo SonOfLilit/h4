@@ -1,6 +1,5 @@
 module Board
-    (
-      Player(..)
+    ( Player(..)
     , other
     , BoardClass
     , toColumns
