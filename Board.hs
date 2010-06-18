@@ -3,6 +3,7 @@ module Board
     , other
     , BoardClass
     , toColumns
+    , toList
     , Board
     , newBoard
     , boardWidth
