@@ -2,6 +2,8 @@ module Board
     (
       Player(..)
     , other
+    , BoardClass
+    , toColumns
     , Board
     , newBoard
     , boardWidth
@@ -29,7 +31,7 @@ class BoardClass a where
     toColumns :: a -> [[Player]]
     toList :: a -> [[Maybe Player]]
     toList board = transpose . fill $ toColumns board
-        where fill columns = map fillColumn columns
+        where fill = map fillColumn
               fillColumn col = replicate k Nothing ++ map Just col
 	          where k = boardHeight - length col
     newBoard :: a
@@ -52,7 +54,7 @@ move player (Board columns) x =
         where
             illegal = (x < 0) || (x >= boardWidth) || (y == boardHeight)
 
-            winningMove = or . map makesRow $ [[d], [l, r], [ul, dr], [dl, ur]]
+            winningMove = any makesRow [[d], [l, r], [ul, dr], [dl, ur]]
             d = count 0 (-1)
             l = count (-1) 0
             r = count 1 0
@@ -63,7 +65,7 @@ move player (Board columns) x =
             count = countInDirection player columns x y
             makesRow rowLengths = sum rowLengths >= (4-1)
 
-            updatedBoard = Board $ (h ++ ((player : col) : t))
+            updatedBoard = Board (h ++ ((player : col) : t))
 
             (h, (col : t)) = splitAt x columns
             y = length col
