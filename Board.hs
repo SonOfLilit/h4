@@ -16,7 +16,7 @@ data Player = Player1
             | Player2
     deriving Eq
 
-instance Show Player where show Player1 = "0"
+instance Show Player where show Player1 = "O"
                            show Player2 = "@"
 
 boardWidth, boardHeight :: Int
