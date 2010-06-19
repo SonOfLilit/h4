@@ -15,7 +15,7 @@ handleRound (thisA, otherA) board player = do
   print board
   putStrLn $ show player ++ ", choose a column:"
   column <- thisA board player
-  putStrLn $ show column ++ ", wise choice!"
+  putStrLn $ show (column + 1) ++ ", wise choice!"
   maybe win handleNextRound (move player board column)
     where win = putStrLn $ show player ++ " wins!"
           handleNextRound b = handleRound (otherA, thisA) b $ other player

@@ -32,12 +32,12 @@ legalMoves (BoardState _ hs _) = findIndices (<boardHeight) hs
 
 moveWins :: BoardState -> Int -> Bool
 moveWins (BoardState player hs arr) x =
-    any (fourRowOf player) . map (map (arr'!)) $ potentialRows arr' x y
+    any (fourRowOf player) $ potentialRows arr' x y
   where y = hs !! x
         arr' = arr // [((x, y), Just player)]
 
-potentialRows :: Array (Int, Int) (Maybe Player) -> Int -> Int -> [[(Int, Int)]]
-potentialRows arr x y = [row, col, diagUp, diagDown]
+potentialRows :: Array (Int, Int) (Maybe Player) -> Int -> Int -> [[Maybe Player]]
+potentialRows arr x y = map (map (arr!)) $ [row, col, diagUp, diagDown]
   where row = [(i, y) | i <- [0..xMax]]
         col = [(x, i) | i <- [0..yMax]]
         diagUp = [(i, j) | i <- [boundX (x-y) .. boundX (yMax-(y-x))], let j = (y-x)+i]
