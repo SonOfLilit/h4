@@ -9,6 +9,8 @@ main = do
     putStrLn "Hello and welcome"
     handleRound (humanPlayer, computerPlayer) newBoard Player1
 
+-- TODO: handle draw
+-- TODO: Talk to flatmates about garbage with holes and garbage that is big
 handleRound :: (MoveChooser, MoveChooser) -> Board -> Player -> IO ()
 handleRound (thisA, otherA) board player = do
   putStrLn "Board position:"

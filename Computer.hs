@@ -31,15 +31,31 @@ heights :: Board -> [Int]
 heights = map length . toColumns
 
 chooseMove :: BoardState -> Maybe Int
-chooseMove board = listToMaybe . map snd . generateSortedMoves $ board
+chooseMove board = listToMaybe . map snd . generateSortedMoves 1 $ board
 
-generateSortedMoves :: BoardState -> [(Score, Int)]
-generateSortedMoves board = sortBy compareScores $ results
+generateSortedMoves :: Int -> BoardState -> [(Score, Int)]
+generateSortedMoves k board = sortBy compareScores $ results
   where results :: [(Score, Int)]
-        roundResults = [move board i | i <- [0..boardWidth-1]]
+        roundResults = [move' board i | i <- [0..boardWidth-1]]
         results = catMaybes . map (>>= format) $ roundResults
         format (sc, st) = Just (sc, lastMove st)
+        move' = if k == 0 then move else moveRecursive (k-1)
         compareScores = flip (compare `on` fst)
+
+moveRecursive :: Int -> BoardState -> Int -> Maybe (Score, BoardState)
+moveRecursive k board x =
+    case move board x of
+      Just mv@(Undecided, board') ->
+          (listToMaybe . generateSortedMoves k $ board') >>= reverseScore mv
+      e -> e
+
+reverseScore :: (Score, a) -> (Score, b) -> Maybe (Score, a)
+reverseScore firstMove secondMove = let (_, b) = firstMove
+                                        (score, _) = secondMove
+                                    in case score of
+                                         Win -> Just (Lose, b)
+                                         Lose -> Just (Win, b)
+                                         _else -> Just firstMove
 
 move :: BoardState -> Int -> Maybe (Score, BoardState)
 move (BoardState player hs arr _) x
