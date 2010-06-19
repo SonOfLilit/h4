@@ -31,13 +31,16 @@ heights :: Board -> [Int]
 heights = map length . toColumns
 
 chooseMove :: BoardState -> Maybe Int
-chooseMove board = listToMaybe . map snd . generateSortedMoves 1 $ board
+chooseMove board = getBestMove 4 board >>= Just . snd
+
+getBestMove :: Int -> BoardState -> Maybe (Score, Int)
+getBestMove k = listToMaybe . generateSortedMoves k
 
 generateSortedMoves :: Int -> BoardState -> [(Score, Int)]
-generateSortedMoves k board = sortBy compareScores $ results
-  where results :: [(Score, Int)]
-        roundResults = [move' board i | i <- [0..boardWidth-1]]
-        results = catMaybes . map (>>= format) $ roundResults
+generateSortedMoves k board = sortBy compareScores . catMaybes $ results 
+  where roundResults = [move' board i | i <- [0..boardWidth-1]]
+        results :: [Maybe (Score, Int)]
+        results = map (>>= format) roundResults
         format (sc, st) = Just (sc, lastMove st)
         move' = if k == 0 then move else moveRecursive (k-1)
         compareScores = flip (compare `on` fst)
@@ -46,7 +49,7 @@ moveRecursive :: Int -> BoardState -> Int -> Maybe (Score, BoardState)
 moveRecursive k board x =
     case move board x of
       Just mv@(Undecided, board') ->
-          (listToMaybe . generateSortedMoves k $ board') >>= reverseScore mv
+          getBestMove k board' >>= reverseScore mv
       e -> e
 
 reverseScore :: (Score, a) -> (Score, b) -> Maybe (Score, a)
@@ -61,25 +64,29 @@ move :: BoardState -> Int -> Maybe (Score, BoardState)
 move (BoardState player hs arr _) x
     | y < boardHeight = Just (score, board')
     | otherwise = Nothing
-  where score = case lastMoveWins board' of
-                  True -> Win
-                  False -> Undecided
+  where score = scoreLastMove board'
         board' = BoardState player' hs' arr' x
         player' = other player
         hs' = hs !!++ x
         y = hs !! x
         arr' = arr // [((x, y), Just player)]
 
-lastMoveWins :: BoardState -> Bool
-lastMoveWins (BoardState player hs arr x) =
+-- Haskell is lazy, therefore it is ok to use this even when a numeric
+-- score will be attached to Undecided
+--
+-- NOTE: Passing y and player might improve performance
+scoreLastMove :: BoardState -> Score
+scoreLastMove (BoardState player hs arr x) =
     -- the state says which player is *next*
-    any (fourRowOf $ other player) $ potentialRows arr x y
-  where 
+    if any (fourRowOf $ other player) $ potentialRows arr x y
+    then Win
+    else Undecided
+  where
         -- the state says how high the *next* move will be
         y = (hs !! x) - 1
 
 potentialRows :: Array (Int, Int) (Maybe Player) -> Int -> Int -> [[Maybe Player]]
-potentialRows arr x y = map (map (arr!)) $ [row, col, diagUp, diagDown]
+potentialRows arr x y = map (map (arr!)) [row, col, diagUp, diagDown]
   where row = [(i, y) | i <- [0..xMax]]
         col = [(x, i) | i <- [0..yMax]]
         diagUp = [(i, j) | i <- [boundX (x-y) .. boundX (yMax-(y-x))], let j = (y-x)+i]
