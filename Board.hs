@@ -30,7 +30,7 @@ other Player2 = Player1
 class BoardClass a where
     toColumns :: a -> [[Player]]
     toList :: a -> [[Maybe Player]]
-    toList board = transpose . fill $ toColumns board
+    toList board = map reverse . fill $ toColumns board
         where fill = map fillColumn
               fillColumn col = replicate k Nothing ++ map Just col
 	          where k = boardHeight - length col
@@ -43,16 +43,19 @@ instance BoardClass Board where
 
 instance Show Board where show=showBoard
 
+showBoard :: Board -> [Char]
 showBoard board = showBoard' ++ columnNumbers
   where
-      showBoard' = unlines . map (unwords . map (maybe " " show)) $ toList board
-      columnNumbers = unwords . map show $ [1..boardWidth+1]
+      showBoard' = unlines . map (unwords . map (maybe " " show)) $ niceList
+      niceList = transpose . map reverse $ toList board
+      columnNumbers = unwords . map show $ [1..boardWidth]
 
 move :: Player -> Board -> Int -> Maybe Board
 move player (Board columns) x =
-    errorIf illegal "Illegal Move" $ justIf (not winningMove) updatedBoard
+    errorIf illegal msg $ justIf (not winningMove) updatedBoard
         where
             illegal = (x < 0) || (x >= boardWidth) || (y == boardHeight)
+            msg = "Illegal Move: " ++ show (x, y)
 
             winningMove = any makesRow [[d], [l, r], [ul, dr], [dl, ur]]
             d = count 0 (-1)
@@ -63,7 +66,7 @@ move player (Board columns) x =
             dl = count (-1) (-1)
             ur = count 1 1
             count = countInDirection player columns x y
-            makesRow rowLengths = sum rowLengths >= (4-1)
+            makesRow rowLengths = sum rowLengths >= ((4-1) :: Int)
 
             updatedBoard = Board (h ++ ((player : col) : t))
 

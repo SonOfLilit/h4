@@ -11,7 +11,11 @@ main = do
 
 handleRound :: (MoveChooser, MoveChooser) -> Board -> Player -> IO ()
 handleRound (thisA, otherA) board player = do
+  putStrLn "Board position:"
+  print board
+  putStrLn $ show player ++ ", choose a column:"
   column <- thisA board player
+  putStrLn $ show column ++ ", wise choice!"
   maybe win handleNextRound (move player board column)
     where win = putStrLn $ show player ++ " wins!"
           handleNextRound b = handleRound (otherA, thisA) b $ other player

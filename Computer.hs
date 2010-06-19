@@ -3,26 +3,53 @@ import H4(MoveChooser)
 import Board(Player, Board, toColumns, toList, boardHeight, boardWidth)
 import Data.Array
 import Data.List
-import Data.Maybe(fromMaybe, listToMaybe)
+import Data.Maybe(catMaybes, fromJust, listToMaybe)
 
-data BoardArray = BoardArray [Int] (Array (Int, Int) (Maybe Player))
+data BoardState = BoardState Player [Int] (Array (Int, Int) (Maybe Player))
+    deriving Show
 
 computerPlayer :: MoveChooser
 computerPlayer = ((return .) .) f
   where
-    f board player = fromMaybe err (chooseMove player $ toBoardArray board)
-    err = error "no more moves"
+    f board player = fromJust (chooseMove $ toBoardState board player)
 
-toBoardArray :: Board -> BoardArray
-toBoardArray board = BoardArray (heights board) arr
+toBoardState :: Board -> Player -> BoardState
+toBoardState board player = BoardState player (heights board) arr
   where arr = listArray boundaries . concat $ toList board
         boundaries = ((0, 0), (boardWidth-1, boardHeight-1))
 
-chooseMove :: Player -> BoardArray -> Maybe Int
-chooseMove player (BoardArray hs board) = findIndex (<boardHeight) hs
-
 heights :: Board -> [Int]
 heights = map length . toColumns
+
+chooseMove :: BoardState -> Maybe Int
+chooseMove board = listToMaybe $ catMaybes [winning, legal]
+  where winning = find (moveWins board) legalMoves'
+        legal = listToMaybe legalMoves'
+        legalMoves' = legalMoves board
+
+legalMoves :: BoardState -> [Int]
+legalMoves (BoardState _ hs _) = findIndices (<boardHeight) hs
+
+moveWins :: BoardState -> Int -> Bool
+moveWins (BoardState player hs arr) x =
+    any (fourRowOf player) . map (map (arr'!)) $ potentialRows arr' x y
+  where y = hs !! x
+        arr' = arr // [((x, y), Just player)]
+
+potentialRows :: Array (Int, Int) (Maybe Player) -> Int -> Int -> [[(Int, Int)]]
+potentialRows arr x y = [row, col, diagUp, diagDown]
+  where row = [(i, y) | i <- [0..xMax]]
+        col = [(x, i) | i <- [0..yMax]]
+        diagUp = [(i, j) | i <- [boundX (x-y) .. boundX (yMax-(y-x))], let j = (y-x)+i]
+        diagDown = [(i, j) | i <- [boundX (x+y-yMax) .. boundX (x+y)], let j = (x+y)-i]
+        boundX i = max 0 $ min xMax i
+        ((0,0), (xMax, yMax)) = bounds arr
+
+fourRowOf :: Player -> [Maybe Player] -> Bool
+fourRowOf player row = foldr f 0 row == (4 :: Int)
+  where f _ 4 = 4       -- once found 4, stop resetting
+        f (Just p) k | p == player = k+1
+        f _ _ = 0       -- reset count
 
 (!!++) :: (Num a) => [a] -> Int -> [a]
 a !!++ i = h ++ [item + 1] ++ t
